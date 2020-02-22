@@ -38,9 +38,6 @@ public class BuscaminasActivity extends AppCompatActivity implements View.OnTouc
     private Button start, atras, reiniciar;
     private LinearLayout layout;
 
-    //Abro la conexion
-    private AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this, "administracion", null, 1);
-
 
     public BuscaminasActivity() {
     }
@@ -293,19 +290,16 @@ actualizarUser();
 
     //cuando se cree un usuario
     public void partidasUser() {
-
-       /* AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this,
-               "administracion", null, 1);
- */
+    //Abrimos la conexion con la bbdd
+       AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this, "administracion", null, 1);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
-
+        //Creamos un contenedor
         ContentValues registro = new ContentValues();
-
+        //Rellenamos el contenedor
         registro.put("nombreJugador", nombreJugador);
         registro.put("numeroVictorias", 0);
         registro.put("numeroPerdidas", 0);
-
+        //Ejecutamos la consulta que nos permitira insertar los datos
         bd.insert("partidas", null, registro);
 
         bd.close();
@@ -317,11 +311,10 @@ actualizarUser();
     public void actualizarUser(){
         int nVictoriaBD = 0;
         int nPerdidadBD = 0;
-        AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this,
-                "administracion", null, 1);
-
+        //Abrimos conexion con la bbdd
+        AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this, "administracion", null, 1);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
+        //creamos un cursor para que nos coja los datos de nuestro user
         Cursor fila = bd.rawQuery(
                 "select numeroVictorias,numeroPerdidas  from partidas where nombreJugador="+nombreJugador, null);
         if (fila.moveToFirst()) {
@@ -329,17 +322,15 @@ actualizarUser();
            nPerdidadBD = fila.getInt(1);
         }
 
+        //Creamos un contenedor
         ContentValues actualiza = new ContentValues();
-
+        //Llenamos el contenedor con los datos
         actualiza.put("numeroVictorias", numeroVictorias + nVictoriaBD);
         actualiza.put("numeroPerdidas", numeroPerdidas + nPerdidadBD);
-
+        //Ejecutamos la consulta para que se actualice
         bd.update("partidas", actualiza, "nombreJugador=" + nombreJugador, null);
         bd.close();
-
-
-
-    }
+}
 
 
     // Aqui esta el codigo para hacer invisible el logueo y que aparezca el buscaminas
@@ -353,17 +344,11 @@ actualizarUser();
             reiniciar.setVisibility(View.VISIBLE);
             layout.setVisibility(View.VISIBLE);
 
-
             nombreJugador = String.valueOf(et1.getText());
-      
-    partidasUser();
 
-
+            partidasUser();
     }
-
-
-
-    }
+}
 
 
 
