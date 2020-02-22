@@ -1,6 +1,7 @@
 package com.example.inicio;
 
 public class casilla {
+
     public int x,y,ancho;
     public int contenido=0;
     public boolean destapado=false;

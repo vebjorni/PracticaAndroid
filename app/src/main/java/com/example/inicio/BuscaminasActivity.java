@@ -2,16 +2,25 @@ package com.example.inicio;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.Layout;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class BuscaminasActivity extends AppCompatActivity implements View.OnTouchListener{
@@ -21,17 +30,40 @@ public class BuscaminasActivity extends AppCompatActivity implements View.OnTouc
     private casilla[][] casillas;
     private boolean activo = true;
 
+    private String nombreJugador;
+    public int numeroVictorias= 0, numeroPerdidas = 0;
+
+    private EditText et1;
+    private TextView tw1,tw2;
+    private Button start, atras, reiniciar;
+    private LinearLayout layout;
+
+    //Abro la conexion
+    private AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this, "administracion", null, 1);
+
+
     public BuscaminasActivity() {
     }
 
     protected void onCreate(Bundle savedInstanceState) {
+        //No permite que la pantalla gire
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_buscaminas);
 
-        LinearLayout layout = (LinearLayout) findViewById(R.id.layout1);
+        et1 = (EditText) findViewById(R.id.et1);
+        tw1 = (TextView) findViewById(R.id.tw1);
+        start = (Button) findViewById(R.id.start);
+        atras = (Button) findViewById(R.id.atras);
+        reiniciar = (Button) findViewById(R.id.reiniciar);
+        layout = (LinearLayout) findViewById(R.id.layout1);
+        tw2 = (TextView) findViewById(R.id.tw2);
+
+
         fondo = new Tablero(this);
         fondo.setOnTouchListener(this);
         layout.addView(fondo);
@@ -47,11 +79,13 @@ public class BuscaminasActivity extends AppCompatActivity implements View.OnTouc
     }
 //OnClick - boton atras
     public void salir(View v) {
+actualizarUser();
         finish();
     }
 
 //OnClick - boton reiniciar
     public void reiniciar(View v) {
+
         casillas = new casilla[8][8];
         for (int f = 0; f < 8; f++) {
             for (int c = 0; c < 8; c++) {
@@ -74,6 +108,8 @@ public class BuscaminasActivity extends AppCompatActivity implements View.OnTouc
                             (int) event.getY())) {
                         casillas[f][c].destapado = true;
                         if (casillas[f][c].contenido == 80) {
+                            numeroPerdidas=numeroPerdidas+1;
+
                             Toast.makeText(this, "Booooooooommmmmmmmmmmm",
                                     Toast.LENGTH_LONG).show();
                             activo = false;
@@ -84,13 +120,15 @@ public class BuscaminasActivity extends AppCompatActivity implements View.OnTouc
                 }
             }
         if (gano() && activo) {
+            numeroVictorias=numeroVictorias+1;
+
             Toast.makeText(this, "Ganaste", Toast.LENGTH_LONG).show();
             activo = false;
+
         }
 
         return true;
     }
-
 
     class Tablero extends View {
 
@@ -167,14 +205,17 @@ public class BuscaminasActivity extends AppCompatActivity implements View.OnTouc
 
     private boolean gano() {
         int cant = 0;
+
         for (int f = 0; f < 8; f++)
             for (int c = 0; c < 8; c++)
                 if (casillas[f][c].destapado)
                     cant++;
-        if (cant == 56)
+        if (cant == 56) {
             return true;
-        else
+        }else {
             return false;
+        }
+
     }
 
     private void contarBombasPerimetro() {
@@ -247,6 +288,83 @@ public class BuscaminasActivity extends AppCompatActivity implements View.OnTouc
         }
     }
 
-}
+    //A partir de aqui el codigo es de la bbdd
+
+
+    //cuando se cree un usuario
+    public void partidasUser() {
+
+       /* AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this,
+               "administracion", null, 1);
+ */
+        SQLiteDatabase bd = admin.getWritableDatabase();
+
+
+        ContentValues registro = new ContentValues();
+
+        registro.put("nombreJugador", nombreJugador);
+        registro.put("numeroVictorias", 0);
+        registro.put("numeroPerdidas", 0);
+
+        bd.insert("partidas", null, registro);
+
+        bd.close();
+
+    }
+
+    //cuando se actualiza un user
+
+    public void actualizarUser(){
+        int nVictoriaBD = 0;
+        int nPerdidadBD = 0;
+        AdminSQLiteOpenHelper admin = new AdminSQLiteOpenHelper(this,
+                "administracion", null, 1);
+
+        SQLiteDatabase bd = admin.getWritableDatabase();
+
+        Cursor fila = bd.rawQuery(
+                "select numeroVictorias,numeroPerdidas  from partidas where nombreJugador="+nombreJugador, null);
+        if (fila.moveToFirst()) {
+           nVictoriaBD = fila.getInt(0);
+           nPerdidadBD = fila.getInt(1);
+        }
+
+        ContentValues actualiza = new ContentValues();
+
+        actualiza.put("numeroVictorias", numeroVictorias + nVictoriaBD);
+        actualiza.put("numeroPerdidas", numeroPerdidas + nPerdidadBD);
+
+        bd.update("partidas", actualiza, "nombreJugador=" + nombreJugador, null);
+        bd.close();
+
+
+
+    }
+
+
+    // Aqui esta el codigo para hacer invisible el logueo y que aparezca el buscaminas
+    public void inviVisi(View Button){
+
+            et1.setVisibility(View.INVISIBLE);
+            tw1.setVisibility(View.INVISIBLE);
+            start.setVisibility(View.INVISIBLE);
+
+            atras.setVisibility(View.VISIBLE);
+            reiniciar.setVisibility(View.VISIBLE);
+            layout.setVisibility(View.VISIBLE);
+
+
+            nombreJugador = String.valueOf(et1.getText());
+      
+    partidasUser();
+
+
+    }
+
+
+
+    }
+
+
 
 
